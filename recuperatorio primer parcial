@@ -1,0 +1,173 @@
+<?php
+
+//ESTE CODIGO FUE IMPLEMENTADO EN EL RECUPERATORIO DEL PRIMER PARCIAL DE IPOO
+public function actualizarStock($cantidad) {
+    if ($cantidad > 0) {
+        $this->stock += $cantidad; // Incrementar el stock
+    } else{
+        $this->stock -= abs($cantidad); // Decrementar el stock (usando el valor absoluto de la cantidad)
+    }
+}
+
+ // Método para agregar un único ítem a la colección de ítems vendidos
+ public function agregarItem($item) {
+    $this->items[] = $item;
+}
+
+// Método para incorporar un producto a la venta
+public function incorporarProducto($producto, $cantidad) {
+    // Verificar si hay suficiente stock disponible para la venta
+    if ($cantidad > 0 && $producto->getStock() >= $cantidad) {
+        // Crear un nuevo ítem de venta con el producto y la cantidad
+        $item = new ItemVenta($producto, $cantidad);
+        // Agregar el ítem a la colección de ítems vendidos
+        $this->agregarItem($item);
+        // Actualizar el stock del producto
+        $producto->actualizarStock(-$cantidad);
+        // Retornar el objeto de producto modificado
+        return $producto;
+    } else {
+        // No hay suficiente stock disponible para la venta
+        return null;
+    }
+}
+
+public function __construct($nombre, $direccion, $telefono) {
+    $this->nombre = $nombre;
+    $this->direccion = $direccion;
+    $this->telefono = $telefono;
+    $this->colProductos = []; // Inicializar la colección de productos como un array vacío
+    $this->colVentas = []; // Inicializar la colección de ventas realizadas como un array vacío
+}
+
+
+public function getNombre() {
+    return $this->nombre;
+}
+
+public function setNombre($nombre) {
+    $this->nombre = $nombre;
+}
+
+public function getDireccion() {
+    return $this->direccion;
+}
+
+public function setDireccion($direccion) {
+    $this->direccion = $direccion;
+}
+
+public function getTelefono() {
+    return $this->telefono;
+}
+
+public function setTelefono($telefono) {
+    $this->telefono = $telefono;
+}
+
+public function getColProductos() {
+    return $this->colProductos;
+}
+
+public function getColVentas() {
+    return $this->colVentas;
+}
+
+// Método para agregar un producto a la colección de productos de la tienda
+public function agregarProducto($producto) {
+    $this->colProductos[] = $producto;
+}
+
+// Método para agregar una venta a la colección de ventas realizadas por la tienda
+public function agregarVenta($venta) {
+    $this->colVentas[] = $venta;
+}
+
+public function __toString() {
+    $info = "Nombre: " . $this->getNombre() . "\n";
+    $info .= "Dirección: " . $this->getDireccion() . "\n";
+    $info .= "Teléfono: " . $this->getTelefono() . "\n";
+    $info .= "Productos:\n";
+    foreach ($this->getColProductos() as $producto) {
+        $info .= $producto->__toString() . "\n";
+    }
+    $info .= "Ventas realizadas: " . count($this->getColVentas()) . "\n";
+    return $info;
+}
+
+public function realizarVenta($ventas) {
+    // Crear un objeto Venta para almacenar los ítems vendidos
+    $venta = new Venta(date("Y-m-d"), "Cliente", "12345", "Tipo A");
+    
+    // Iterar sobre el arreglo de ventas
+    foreach ($ventas as $ventaInfo) {
+        $codigoBarra = $ventaInfo['codigoBarra'];
+        $cantidad = $ventaInfo['cantidad'];
+
+        // Buscar el producto por su código de barras
+        $indiceProducto = $this->buscarProducto($codigoBarra);
+
+        // Verificar si se encontró el producto y hay suficiente stock
+        if ($indiceProducto !== null && $this->getColProductos()[$indiceProducto]->getStock() >= $cantidad) {
+            // Agregar el producto a la venta
+            $productoVendido = $this->productos[$indiceProducto];
+            $this->productos[$indiceProducto]->actualizarStock($cantidad); // Actualizar el stock del producto
+            $venta->incorporarProducto($productoVendido, $cantidad); // Agregar el producto vendido a la venta
+        }
+    }
+
+    // Retornar el objeto Venta con los ítems correspondientes a los productos que se pudieron vender
+    return $venta;
+}
+
+private function buscarProducto($codigoBarra) {
+    $cantidadProductos = count($this->productos);
+    
+    // Inicializar el índice y la variable de control del bucle
+    $i = 0;
+    $indiceEncontrado = null;
+
+    while ($i < $cantidadProductos && $indiceEncontrado === null) {
+        $producto = $this->productos[$i];
+
+        // Verificar si el producto tiene el código de barras buscado
+        if ($producto->getCodigoBarra() === $codigoBarra) {
+            // Se encontró el producto, asignar el índice y terminar el bucle
+            $indiceEncontrado = $i;
+        }
+        $i++;
+    }
+
+    // Retornar el índice del producto encontrado o null si no se encontró
+    return $indiceEncontrado;
+}
+
+// Definir la clase TestTienda
+class TestTienda {
+    public static function run() {
+        // Crear una colección de productos
+        $productos = [
+            new Producto("0001", "Producto 1", 10),
+            new Producto("0002", "Producto 2", 8),
+            new Producto("0003", "Producto 3", 15),
+            new Producto("0004", "Producto 4", 6)
+        ];
+
+        // Crear un objeto Tienda con la colección de productos
+        $tienda = new Tienda("Mi Tienda", "Calle Principal", "123456789", $productos);
+
+        // Crear un arreglo asociativo con la información de los productos
+        $productosVenta = [
+            ['codigoBarra' => '0001', 'cantidad' => 5],
+            ['codigoBarra' => '0002', 'cantidad' => 2],
+            ['codigoBarra' => '0004', 'cantidad' => 4]
+        ];
+
+        // Invocar al método realizarVenta con el arreglo asociativo creado
+        $ventaRealizada = $tienda->realizarVenta($productosVenta);
+
+        // Imprimir el objeto Tienda
+        echo "Estado actual de la tienda:\n";
+        echo $tienda;
+    }
+}
